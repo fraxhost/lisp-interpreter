@@ -1,0 +1,8 @@
+# Ignore all executables
+main
+*.out
+*.exe
+*.bin
+
+# Ignore DS_Store files (macOS)
+.DS_Store
