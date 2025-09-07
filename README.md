@@ -1,5 +1,4 @@
 
-
 # 🚀 Compile and Run Your C Program
 
 Welcome! This project includes a handy script (`run.sh`) to help you compile and run your `main.c` file with ease.
@@ -42,10 +41,13 @@ Welcome! This project includes a handy script (`run.sh`) to help you compile and
 - ❗ If you see "Compilation failed.", check your `main.c` for errors.
 - 🖥️ If you see "gcc is not installed", install it:
   - On macOS, use:
+
     ```sh
     xcode-select --install
     ```
+
   - Or with Homebrew:
+
     ```sh
     brew install gcc
     ```
