@@ -120,10 +120,7 @@ void runFile(const char *path)
 {
     bool hadError = false;
 
-    printf("----- Running File -----\n\n%s\n\n", path);
-
     char *sourceCode = readFile(path);
-    printf("----- File Contents -----\n\n%s\n\n", sourceCode);
 
     scanTokens(sourceCode);
 }
@@ -192,7 +189,7 @@ void scanTokens(char *sourceCode)
         };
 
     printf("sourceCode: %s\n", scanner.source);
-    printf("sourceCode length: %zu\n", scanner.sourceLength);
+    printf("sourceCode length: %zu\n\n", scanner.sourceLength);
 
     while (!isAtEnd(scanner.current, scanner.sourceLength))
     {
@@ -209,7 +206,7 @@ void scanTokens(char *sourceCode)
 void scanToken(struct Scanner *scanner)
 {
     char currentCharacter = advance(scanner);
-    printf("Current Character Index: %d\n", scanner->current);
+    // printf("Current Character Index: %d\n", scanner->current);
 
     switch (currentCharacter)
     {
@@ -257,7 +254,7 @@ void addToken(struct Scanner *scanner, enum TokenType tokenType, char *literal)
 
     if (!scanner->tokens)
     {
-        printf("Failed to realloc tokens\n");
+        printf("***** Failed to realloc tokens *****\n");
         exit(1);
     }
 
