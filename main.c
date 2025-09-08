@@ -5,25 +5,27 @@
 
 // ==================================== Start: Data Structures ====================================
 
+// ***** Scanner Related *****
 enum TokenType
 {
     // Single-character tokens
     LEFT_PAREN = 0,
     RIGHT_PAREN = 1,
     SINGLE_QUOTE = 2,
+    DOT = 3,
 
     // One or two character tokens
 
     // Literals
-    ATOM_IDENTIFIER = 3,
-    ATOM_STRING = 4,
-    ATOM_NUMBER = 5,
+    ATOM_IDENTIFIER = 4,
+    ATOM_STRING = 5,
+    ATOM_NUMBER = 6,
 
     // Keywords
     // AND, IF, ELSE
 
     // End Of File
-    TOKEN_EOF = 6
+    TOKEN_EOF = 7
 };
 
 union Literal
@@ -76,19 +78,49 @@ struct Keyword keywords[] = {
     // {"while", TOKEN_WHILE}
 };
 
+// ***** Parser Related *****
+struct Parser
+{
+    const struct Token *tokens;
+    int tokenCount;
+    int current;
+};
+
+enum SExprType
+{
+    TYPE_NIL,    // Represents nil / empty list
+    TYPE_NUMBER, // Numeric atom
+    TYPE_STRING, // String atom
+    TYPE_SYMBOL, // Symbol atom
+    TYPE_CONS    // Cons cell
+};
+
+struct cons
+{
+    struct SExpr *car; // Head of the list
+    struct SExpr *cdr; // Tail of the list
+};
+
+struct SExpr
+{
+    enum SExprType type;
+    union
+    {
+        double number; // For numeric atoms
+        char *string;  // For strings or symbols
+        struct cons cons;
+    };
+};
+
 // ====================================== End: Data Structures ======================================
 
 // =================================== Start: Function Definition ===================================
 
-// File Related Functions
+// File Related
 char *readFile(const char *path);
 
-// Error Related Functions
-void error(int line, const char *message);
-void report(int line, const char *where, const char *message);
-
-// Scanner Related Functions
-void scanTokens(char *sourceCode);
+// Scanner Related
+struct Scanner scanTokens(char *sourceCode);
 void scanToken(struct Scanner *scanner);
 void addToken(struct Scanner *scanner, enum TokenType tokenType, char *literal);
 char peek(int current, int lengthOfSource, const char *sourceCode);
@@ -101,13 +133,36 @@ bool isAlphaNumeric(char c);
 void stringLiteral(struct Scanner *scanner);
 void numberLiteral(struct Scanner *scanner);
 void identifierOrKeyword(struct Scanner *scanner);
-
-// Utility Functions
+// Scanner Utility
 enum TokenType getIdentifierType(const char *text);
 char *getSubstring(const char *source, int start, int end);
-
-// Print Utility Functions
+// Scanner Print Utility
 void printTokens(struct Scanner scanner);
+// Error Related
+void error(int line, const char *message);
+void report(int line, const char *where, const char *message);
+
+// Parser Related
+void parse(struct Scanner scanner);
+struct SExpr *parseSexpr(struct Parser *parser);
+struct SExpr *parseAtom(struct Parser *parser);
+struct SExpr *parseList(struct Parser *parser);
+bool currentTokenIs(struct Parser parser, enum TokenType type);
+bool isCurrentTokenAtom(struct Parser parser);
+struct Token peekToken(struct Parser parser);
+struct Token advanceToken(struct Parser *parser);
+struct Token consumeToken(struct Parser *parser, enum TokenType expectedType, const char *message);
+struct SExpr *makeNil();
+// Helper to create atoms
+struct SExpr *makeNumber(double value);
+struct SExpr *makeString(const char *value);
+struct SExpr *makeSymbol(const char *value);
+// Helper to create cons cells
+struct SExpr *makeCons(struct SExpr *car, struct SExpr *cdr);
+void printSExpr(struct SExpr *expr);
+void printCons(struct SExpr *expr);
+// Error Related
+void parseError(struct Token token, const char *message);
 
 // Run Function
 void runFile(const char *path);
@@ -122,7 +177,9 @@ void runFile(const char *path)
 
     char *sourceCode = readFile(path);
 
-    scanTokens(sourceCode);
+    struct Scanner scanner = scanTokens(sourceCode);
+
+    parse(scanner);
 }
 
 char *readFile(const char *path)
@@ -176,7 +233,7 @@ void report(int line, const char *where, const char *message)
     printf("[line %d] Error %s: %s\n", line, where, message);
 }
 
-void scanTokens(char *sourceCode)
+struct Scanner scanTokens(char *sourceCode)
 {
     struct Scanner scanner =
         {
@@ -197,10 +254,14 @@ void scanTokens(char *sourceCode)
         scanToken(&scanner);
     }
 
-    // Add EOF token at the end
-    // addToken(&scanner, TOKEN_EOF, NULL);
+    // Add EOF token at the end (Make a function later)
+    // advance(&scanner);
+    // scanner.start = scanner.current;
+    addToken(&scanner, TOKEN_EOF, NULL);
 
     printTokens(scanner);
+
+    return scanner;
 }
 
 void scanToken(struct Scanner *scanner)
@@ -222,6 +283,9 @@ void scanToken(struct Scanner *scanner)
         break;
     case ')':
         addToken(scanner, RIGHT_PAREN, NULL);
+        break;
+    case '.':
+        addToken(scanner, DOT, NULL);
         break;
     case '\'':
         addToken(scanner, SINGLE_QUOTE, NULL);
@@ -272,6 +336,10 @@ void addToken(struct Scanner *scanner, enum TokenType tokenType, char *literal)
         // convert to double
         double value = strtod(literal, NULL);
         token.literal.number = value;
+    }
+    else if (tokenType == TOKEN_EOF)
+    {
+        token.lexeme = "<EOF>";
     }
 
     scanner->tokens[scanner->tokenCount] = token;
@@ -493,6 +561,259 @@ void printTokens(struct Scanner scanner)
             printf("Token %d: type=%d, lexeme=\"%s\", line=%d\n",
                    i, t.type, t.lexeme, t.line);
         }
+    }
+
+    printf("\n");
+}
+
+// Parser Related
+void parse(struct Scanner scanner)
+{
+    struct Parser parser =
+        {
+            .tokens = scanner.tokens,
+            .tokenCount = scanner.tokenCount,
+            .current = 0,
+        };
+
+    struct SExpr *sexpr = parseSexpr(&parser);
+
+    printSExpr(sexpr);
+}
+
+struct SExpr *parseSexpr(struct Parser *parser)
+{
+    if (currentTokenIs(*parser, TOKEN_EOF))
+    {
+        printf("EOF\n");
+        return makeNil();
+    }
+
+    if (isCurrentTokenAtom(*parser))
+    {
+        return parseAtom(parser);
+    }
+    else if (currentTokenIs(*parser, LEFT_PAREN))
+    {
+        consumeToken(parser, LEFT_PAREN, "Expected '(' at start of list");
+        struct SExpr *list = parseList(parser);
+        return list;
+    }
+    else
+    {
+        struct Token currentToken = advanceToken(parser);
+        printf("Unexpected token: %s\n", currentToken.lexeme);
+        return makeNil(); // or NULL
+    }
+}
+
+struct SExpr *parseAtom(struct Parser *parser)
+{
+    struct Token currentToken = advanceToken(parser);
+
+    if (currentToken.type == ATOM_NUMBER)
+    {
+        double currentTokenValue = currentToken.literal.number;
+        return makeNumber(currentTokenValue);
+    }
+    else if (currentToken.type == ATOM_IDENTIFIER)
+    {
+        char *currentTokenText = currentToken.lexeme;
+        return makeSymbol(currentTokenText);
+    }
+    else if (currentToken.type == ATOM_STRING)
+    {
+        char *currentTokenValue = currentToken.literal.string;
+        return makeString(currentTokenValue);
+    }
+    else
+    {
+        printf("Expected atom");
+        return makeNil();
+    }
+}
+
+struct SExpr *parseList(struct Parser *parser)
+{
+    if (currentTokenIs(*parser, RIGHT_PAREN))
+    {
+        consumeToken(parser, RIGHT_PAREN, "Expected ')' to close list");
+        return makeNil(); // empty list
+    }
+
+    // Parse the first element
+    struct SExpr *first = parseSexpr(parser);
+
+    // Check if we have a dot
+    if (currentTokenIs(*parser, DOT))
+    {
+        // Consume '.'
+        consumeToken(parser, DOT, "Expected '.' in dotted pair");
+
+        // Parse the cdr
+        struct SExpr *cdr = parseSexpr(parser);
+
+        // Require closing ')'
+        consumeToken(parser, RIGHT_PAREN, "Expected ')' after dotted pair");
+
+        return makeCons(first, cdr);
+    }
+
+    // Otherwise, parse the rest of the list as usual
+    struct SExpr *rest = parseList(parser);
+    return makeCons(first, rest);
+}
+
+bool currentTokenIs(struct Parser parser, enum TokenType type)
+{
+    if (parser.current >= parser.tokenCount)
+    {
+        return false; // end of tokens
+    }
+
+    return parser.tokens[parser.current].type == type;
+}
+
+bool isCurrentTokenAtom(struct Parser parser)
+{
+    struct Token token = peekToken(parser);
+    enum TokenType tokenType = token.type;
+
+    return (tokenType == ATOM_IDENTIFIER ||
+            tokenType == ATOM_NUMBER ||
+            tokenType == ATOM_STRING);
+}
+
+struct Token peekToken(struct Parser parser)
+{
+    return parser.tokens[parser.current];
+}
+
+struct Token advanceToken(struct Parser *parser)
+{
+    struct Token currentToken = parser->tokens[parser->current];
+
+    if (parser->current < parser->tokenCount)
+    {
+        parser->current++;
+    }
+
+    return currentToken;
+}
+
+struct Token consumeToken(struct Parser *parser, enum TokenType expectedType, const char *message)
+{
+    struct Token currentToken = peekToken(*parser);
+    enum TokenType t = currentToken.type;
+
+    if (t != expectedType)
+    {
+        struct Token currentToken = peekToken(*parser);
+        parseError(currentToken, message);
+    }
+
+    return advanceToken(parser);
+}
+
+void parseError(struct Token token, const char *message)
+{
+    printf("Parse error at token '%s': %s\n", token.lexeme, message);
+
+    exit(1);
+}
+
+struct SExpr *makeNil()
+{
+    static struct SExpr nilNode = {.type = TYPE_NIL};
+    return &nilNode;
+}
+
+// Helper to create atoms
+struct SExpr *makeNumber(double value)
+{
+    struct SExpr *node = malloc(sizeof(struct SExpr));
+    node->type = TYPE_NUMBER;
+    node->number = value;
+    return node;
+}
+
+struct SExpr *makeString(const char *value)
+{
+    struct SExpr *node = malloc(sizeof(struct SExpr));
+    node->type = TYPE_STRING;
+    node->string = strdup(value);
+
+    return node;
+}
+
+struct SExpr *makeSymbol(const char *value)
+{
+    struct SExpr *node = malloc(sizeof(struct SExpr));
+    node->type = TYPE_SYMBOL;
+    node->string = strdup(value);
+
+    return node;
+}
+
+// Helper to create cons cells
+struct SExpr *makeCons(struct SExpr *car, struct SExpr *cdr)
+{
+    struct SExpr *node = malloc(sizeof(struct SExpr));
+    node->type = TYPE_CONS;
+    node->cons.car = car;
+    node->cons.cdr = cdr;
+    return node;
+}
+
+void printSExpr(struct SExpr *expr)
+{
+    if (!expr)
+    {
+        printf("nil");
+        return;
+    }
+
+    switch (expr->type)
+    {
+    case TYPE_NUMBER:
+        printf("%g", expr->number);
+        break;
+    case TYPE_STRING:
+    case TYPE_SYMBOL:
+        printf("%s", expr->string);
+        break;
+    case TYPE_NIL:
+        printf("()");
+        break;
+    case TYPE_CONS:
+        printf("(");
+        printCons(expr);
+        printf(")");
+        break;
+    default:
+        break;
+    }
+}
+
+// Helper to print a cons cell
+void printCons(struct SExpr *expr)
+{
+    printSExpr(expr->cons.car);
+
+    if (expr->cons.cdr == NULL || expr->cons.cdr->type == TYPE_NIL)
+    {
+        return; // end of list
+    }
+    else if (expr->cons.cdr->type == TYPE_CONS)
+    {
+        printf(" ");
+        printCons(expr->cons.cdr);
+    }
+    else
+    {
+        // improper list (dotted pair)
+        printf(" . ");
+        printSExpr(expr->cons.cdr);
     }
 }
 
