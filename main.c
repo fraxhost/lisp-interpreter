@@ -152,13 +152,13 @@ bool isCurrentTokenAtom(struct Parser parser);
 struct Token peekToken(struct Parser parser);
 struct Token advanceToken(struct Parser *parser);
 struct Token consumeToken(struct Parser *parser, enum TokenType expectedType, const char *message);
-struct SExpr *makeNil();
+struct SExpr *nil();
 // Helper to create atoms
-struct SExpr *makeNumber(double value);
-struct SExpr *makeString(const char *value);
-struct SExpr *makeSymbol(const char *value);
+struct SExpr *number(double value);
+struct SExpr *string(const char *value);
+struct SExpr *symbol(const char *value);
 // Helper to create cons cells
-struct SExpr *makeCons(struct SExpr *car, struct SExpr *cdr);
+struct SExpr *cons(struct SExpr *car, struct SExpr *cdr);
 void printSExpr(struct SExpr *expr);
 void printCons(struct SExpr *expr);
 // Error Related
@@ -586,7 +586,7 @@ struct SExpr *parseSexpr(struct Parser *parser)
     if (currentTokenIs(*parser, TOKEN_EOF))
     {
         printf("EOF\n");
-        return makeNil();
+        return nil();
     }
 
     if (isCurrentTokenAtom(*parser))
@@ -603,7 +603,7 @@ struct SExpr *parseSexpr(struct Parser *parser)
     {
         struct Token currentToken = advanceToken(parser);
         printf("Unexpected token: %s\n", currentToken.lexeme);
-        return makeNil(); // or NULL
+        return nil(); // or NULL
     }
 }
 
@@ -614,22 +614,22 @@ struct SExpr *parseAtom(struct Parser *parser)
     if (currentToken.type == ATOM_NUMBER)
     {
         double currentTokenValue = currentToken.literal.number;
-        return makeNumber(currentTokenValue);
+        return number(currentTokenValue);
     }
     else if (currentToken.type == ATOM_IDENTIFIER)
     {
         char *currentTokenText = currentToken.lexeme;
-        return makeSymbol(currentTokenText);
+        return symbol(currentTokenText);
     }
     else if (currentToken.type == ATOM_STRING)
     {
         char *currentTokenValue = currentToken.literal.string;
-        return makeString(currentTokenValue);
+        return string(currentTokenValue);
     }
     else
     {
         printf("Expected atom");
-        return makeNil();
+        return nil();
     }
 }
 
@@ -638,7 +638,7 @@ struct SExpr *parseList(struct Parser *parser)
     if (currentTokenIs(*parser, RIGHT_PAREN))
     {
         consumeToken(parser, RIGHT_PAREN, "Expected ')' to close list");
-        return makeNil(); // empty list
+        return nil(); // empty list
     }
 
     // Parse the first element
@@ -656,12 +656,12 @@ struct SExpr *parseList(struct Parser *parser)
         // Require closing ')'
         consumeToken(parser, RIGHT_PAREN, "Expected ')' after dotted pair");
 
-        return makeCons(first, cdr);
+        return cons(first, cdr);
     }
 
     // Otherwise, parse the rest of the list as usual
     struct SExpr *rest = parseList(parser);
-    return makeCons(first, rest);
+    return cons(first, rest);
 }
 
 bool currentTokenIs(struct Parser parser, enum TokenType type)
@@ -722,14 +722,14 @@ void parseError(struct Token token, const char *message)
     exit(1);
 }
 
-struct SExpr *makeNil()
+struct SExpr *nil()
 {
     static struct SExpr nilNode = {.type = TYPE_NIL};
     return &nilNode;
 }
 
 // Helper to create atoms
-struct SExpr *makeNumber(double value)
+struct SExpr *number(double value)
 {
     struct SExpr *node = malloc(sizeof(struct SExpr));
     node->type = TYPE_NUMBER;
@@ -737,7 +737,7 @@ struct SExpr *makeNumber(double value)
     return node;
 }
 
-struct SExpr *makeString(const char *value)
+struct SExpr *string(const char *value)
 {
     struct SExpr *node = malloc(sizeof(struct SExpr));
     node->type = TYPE_STRING;
@@ -746,7 +746,7 @@ struct SExpr *makeString(const char *value)
     return node;
 }
 
-struct SExpr *makeSymbol(const char *value)
+struct SExpr *symbol(const char *value)
 {
     struct SExpr *node = malloc(sizeof(struct SExpr));
     node->type = TYPE_SYMBOL;
@@ -756,13 +756,35 @@ struct SExpr *makeSymbol(const char *value)
 }
 
 // Helper to create cons cells
-struct SExpr *makeCons(struct SExpr *car, struct SExpr *cdr)
+struct SExpr *cons(struct SExpr *car, struct SExpr *cdr)
 {
     struct SExpr *node = malloc(sizeof(struct SExpr));
     node->type = TYPE_CONS;
     node->cons.car = car;
     node->cons.cdr = cdr;
     return node;
+}
+
+// Return the first element of a cons cell
+struct SExpr *car(struct SExpr *list)
+{
+    if (list == NULL || list->type != TYPE_CONS)
+    {
+        fprintf(stderr, "Error: car called on non-cons\n");
+        return NULL; // or makeNil()
+    }
+    return list->cons.car;
+}
+
+// Return the rest (cdr) of a cons cell
+struct SExpr *cdr(struct SExpr *list)
+{
+    if (list == NULL || list->type != TYPE_CONS)
+    {
+        printf("Error: cdr called on non-cons\n");
+        return NULL; // or makeNil()
+    }
+    return list->cons.cdr;
 }
 
 void printSExpr(struct SExpr *expr)
