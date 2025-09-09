@@ -1,0 +1,31 @@
+✅ These test cases ensure coverage of:
+    - Atoms: numbers, symbols, strings
+    - Empty lists (nil)
+    - Proper lists
+    - Nested lists
+    - Dotted pairs / improper lists
+    - Mixed content
+
+|   #   |   Input (file content)               |   Expected Output (printed)          |   Notes                      |
+| ----- | ------------------------------------ | ------------------------------------ | ---------------------------- |
+| 1     | `12.26`                              | `12.26`                              | Atom (number)                |
+| 2     | `"hello world"`                      | `"hello world"`                      | Atom (string)                |
+| 3     | `foo`                                | `foo`                                | Atom (symbol)                |
+| 4     | `()`                                 | `()`                                 | Empty list (nil)             |
+| 5     | `(a)`                                | `(a)`                                | Single element list          |
+| 6     | `(a b c)`                            | `(a b c)`                            | Simple list                  |
+| 7     | `((a b) (c d))`                      | `((a b) (c d))`                      | Nested lists                 |
+| 8     | `((1 2) (3 4 5))`                    | `((1 2) (3 4 5))`                    | Nested numeric lists         |
+| 9     | `(a (b (c (d))))`                    | `(a (b (c (d))))`                    | Deeply nested list           |
+| 10    | `(a (7 8 9) x)`                      | `(a (7 8 9) x)`                      | Mixed atoms + list           |
+| 11    | `((a (7 8 9) x) (b (4 5 6) y))`      | `((a (7 8 9) x) (b (4 5 6) y))`      | Example from assignment      |
+| 12    | `(a . b)`                            | `(a . b)`                            | Dotted pair                  |
+| 13    | `(a b . c)`                          | `(a b . c)`                          | Improper list ending in atom |
+| 14    | `(a . (b . (c . d)))`                | `(a b c . d)`                        | Long dotted chain            |
+| 15    | `(a (b . c) d)`                      | `(a (b . c) d)`                      | Dotted pair inside list      |
+| 16    | `((a . b) . (c . d))`                | `((a . b) . (c . d))`                | Nested dotted pairs          |
+| 17    | `(1 (2 (3 (4 . 5))))`                | `(1 (2 (3 (4 . 5))))`                | Nested dotted structure      |
+| 18    | `( "a string" symbol 1234 )`         | `("a string" symbol 1234)`           | Mix of all atom types        |
+| 19    | `(((nil)))`                          | `((()))`                             | Explicit nil nested          |
+| 20    | `(list with "quoted string" and 99)` | `(list with "quoted string" and 99)` | Complex mixed list           |
+| ----- | ------------------------------------ | ------------------------------------ | ---------------------------- |

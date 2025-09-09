@@ -1,0 +1,1 @@
+(list with "quoted string" and 99)

@@ -23,9 +23,10 @@ enum TokenType
 
     // Keywords
     // AND, IF, ELSE
+    NIL = 7,
 
     // End Of File
-    TOKEN_EOF = 7
+    TOKEN_EOF = 8
 };
 
 union Literal
@@ -76,6 +77,7 @@ struct Keyword keywords[] = {
     // {"true", TOKEN_TRUE},
     // {"var", TOKEN_VAR},
     // {"while", TOKEN_WHILE}
+    {"nil", NIL},
 };
 
 // ***** Parser Related *****
@@ -245,8 +247,8 @@ struct Scanner scanTokens(char *sourceCode)
             .line = 1,
         };
 
-    printf("sourceCode: %s\n", scanner.source);
-    printf("sourceCode length: %zu\n\n", scanner.sourceLength);
+    // printf("sourceCode: %s\n", scanner.source);
+    // printf("sourceCode length: %zu\n\n", scanner.sourceLength);
 
     while (!isAtEnd(scanner.current, scanner.sourceLength))
     {
@@ -259,7 +261,7 @@ struct Scanner scanTokens(char *sourceCode)
     // scanner.start = scanner.current;
     addToken(&scanner, TOKEN_EOF, NULL);
 
-    printTokens(scanner);
+    // printTokens(scanner);
 
     return scanner;
 }
@@ -340,6 +342,11 @@ void addToken(struct Scanner *scanner, enum TokenType tokenType, char *literal)
     else if (tokenType == TOKEN_EOF)
     {
         token.lexeme = "<EOF>";
+    }
+
+    else if (tokenType == NIL)
+    {
+        token.lexeme = NULL;
     }
 
     scanner->tokens[scanner->tokenCount] = token;
@@ -585,7 +592,7 @@ struct SExpr *parseSexpr(struct Parser *parser)
 {
     if (currentTokenIs(*parser, TOKEN_EOF))
     {
-        printf("EOF\n");
+        // printf("EOF\n");
         return nil();
     }
 
@@ -639,6 +646,12 @@ struct SExpr *parseList(struct Parser *parser)
     {
         consumeToken(parser, RIGHT_PAREN, "Expected ')' to close list");
         return nil(); // empty list
+    }
+
+    if (currentTokenIs(*parser, NIL))
+    {
+        advanceToken(parser);
+        return nil();
     }
 
     // Parse the first element
@@ -770,7 +783,7 @@ struct SExpr *car(struct SExpr *list)
 {
     if (list == NULL || list->type != TYPE_CONS)
     {
-        fprintf(stderr, "Error: car called on non-cons\n");
+        printf("Error: car called on non-cons\n");
         return NULL; // or makeNil()
     }
     return list->cons.car;
@@ -801,6 +814,8 @@ void printSExpr(struct SExpr *expr)
         printf("%g", expr->number);
         break;
     case TYPE_STRING:
+        printf("\"%s\"", expr->string);
+        break;
     case TYPE_SYMBOL:
         printf("%s", expr->string);
         break;

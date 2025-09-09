@@ -1,0 +1,204 @@
+===== Test Report =====
+
+============================
+Running test 1...
+Input:
+12.26
+Expected:
+12.26
+Got:
+12.26
+✅ Test 1 PASSED
+
+============================
+Running test 2...
+Input:
+"hello world"
+Expected:
+"hello world"
+Got:
+"hello world"
+✅ Test 2 PASSED
+
+============================
+Running test 3...
+Input:
+foo
+Expected:
+foo
+Got:
+foo
+✅ Test 3 PASSED
+
+============================
+Running test 4...
+Input:
+()
+Expected:
+()
+Got:
+()
+✅ Test 4 PASSED
+
+============================
+Running test 5...
+Input:
+(a)
+Expected:
+(a)
+Got:
+(a)
+✅ Test 5 PASSED
+
+============================
+Running test 6...
+Input:
+(a b c)
+Expected:
+(a b c)
+Got:
+(a b c)
+✅ Test 6 PASSED
+
+============================
+Running test 7...
+Input:
+((a b) (c D))
+Expected:
+((a b) (c D))
+Got:
+((a b) (c D))
+✅ Test 7 PASSED
+
+============================
+Running test 8...
+Input:
+((1 2) (3 4 5))
+Expected:
+((1 2) (3 4 5))
+Got:
+((1 2) (3 4 5))
+✅ Test 8 PASSED
+
+============================
+Running test 9...
+Input:
+(a (b (c (d))))
+Expected:
+(a (b (c (d))))
+Got:
+(a (b (c (d))))
+✅ Test 9 PASSED
+
+============================
+Running test 10...
+Input:
+(a (7 8 9) x)
+Expected:
+(a (7 8 9) x)
+Got:
+(a (7 8 9) x)
+✅ Test 10 PASSED
+
+============================
+Running test 11...
+Input:
+((a (7 8 9) x) (b (4 5 6) y))
+Expected:
+((a (7 8 9) x) (b (4 5 6) y))
+Got:
+((a (7 8 9) x) (b (4 5 6) y))
+✅ Test 11 PASSED
+
+============================
+Running test 12...
+Input:
+(a . b)
+Expected:
+(a . b)
+Got:
+(a . b)
+✅ Test 12 PASSED
+
+============================
+Running test 13...
+Input:
+(a b . c)
+Expected:
+(a b . c)
+Got:
+(a b . c)
+✅ Test 13 PASSED
+
+============================
+Running test 14...
+Input:
+(a . (b . (c . d)))
+Expected:
+(a b c . d)
+Got:
+(a b c . d)
+✅ Test 14 PASSED
+
+============================
+Running test 15...
+Input:
+(a (b . c) d)
+Expected:
+(a (b . c) d)
+Got:
+(a (b . c) d)
+✅ Test 15 PASSED
+
+============================
+Running test 16...
+Input:
+((a . b) . (c . d))
+Expected:
+((a . b) . (c . d))
+Got:
+((a . b) c . d)
+❌ Test 16 FAILED
+
+============================
+Running test 17...
+Input:
+(1 (2 (3 (4 . 5))))
+Expected:
+(1 (2 (3 (4 . 5))))
+Got:
+(1 (2 (3 (4 . 5))))
+✅ Test 17 PASSED
+
+============================
+Running test 18...
+Input:
+( "a string" symbol 1234 )
+Expected:
+("a string" symbol 1234)
+Got:
+("a string" symbol 1234)
+✅ Test 18 PASSED
+
+============================
+Running test 19...
+Input:
+(((nil)))
+Expected:
+((()))
+Got:
+((()))
+✅ Test 19 PASSED
+
+============================
+Running test 20...
+Input:
+(list with "quoted string" and 99)
+Expected:
+(list with "quoted string" and 99)
+Got:
+(list with "quoted string" and 99)
+✅ Test 20 PASSED
+
+==== Summary ====
+Passed 19 out of 20 tests
